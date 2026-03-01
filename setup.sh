@@ -24,11 +24,11 @@ pip3 install websockets --break-system-packages -q 2>/dev/null || true
 
 # Copy start script
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-if [ -f "$SCRIPT_DIR/start_vnc_browser.sh" ]; then
-  cp "$SCRIPT_DIR/start_vnc_browser.sh" /root/start_vnc_browser.sh
-  chmod +x /root/start_vnc_browser.sh
+if [ -f "$SCRIPT_DIR/start.sh" ]; then
+  cp "$SCRIPT_DIR/start.sh" /root/start.sh
+  chmod +x /root/start.sh
 fi
 
 echo "=== Setup complete ==="
 echo "Chrome: $(google-chrome-stable --version 2>/dev/null || echo 'not found')"
-echo "Run: bash /root/start_vnc_browser.sh [password] [novnc_port] [cdp_port]"
+echo "Run: bash /root/start.sh [password] [novnc_port] [cdp_port]"

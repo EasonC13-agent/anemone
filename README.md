@@ -1,121 +1,121 @@
 # 🌊 Anemone
 
 <p align="center">
-  <img src="assets/anemone-banner.png" alt="Anemone - Safe browser environment for AI agents" width="600">
+  <img src="assets/anemone-banner.png" alt="Anemone - Managed browser for OpenClaw" width="600">
 </p>
 
 <p align="center">
-  <em>Like the sea anemone that shields its host, Anemone protects your AI agent's browser from detection.</em>
-</p>
-
-<p align="center">
-  <strong>Headful Chrome + noVNC + Anti-Detection + Security Hardening</strong><br>
-  For Docker containers. Free and open source.
+  <em>A managed Chrome environment for <a href="https://github.com/openclaw/openclaw">OpenClaw</a> that just works — anywhere.</em>
 </p>
 
 ---
 
-## What is Anemone?
+## The Problem
 
-Anemone gives your AI agent a **real browser** inside a Docker container that doesn't get blocked by Google, Cloudflare, or other anti-bot systems.
+OpenClaw agents need a browser. But getting one that reliably works is harder than it should be:
 
-- 🐟 **Anti-detection** — Headful Chrome via Xvfb, no "HeadlessChrome" fingerprint
-- 🖥️ **Human VNC access** — Web-based noVNC with SSL + password for manual intervention
-- 🤖 **AI agent automation** — Chrome DevTools Protocol (CDP) for programmatic control
-- 🔒 **Security hardened** — Chrome Policy blocks `file://`, extensions, DevTools
-- 📦 **One script** — No Docker Compose, no Kubernetes, just `bash start.sh`
-- 🔄 **Persistent profile** — Cookies and sessions survive restarts
+- **Mac/Desktop** — Browser Relay extension disconnects, requires manual re-attach
+- **Docker/VPS** — Headless Chrome gets blocked by Google, Cloudflare, CAPTCHA walls
+- **Remote servers** — No GUI, no way for humans to intervene when things go wrong
 
-## Why?
+You shouldn't have to fight your browser. You should be building agents.
 
-Headless Chrome in Docker gets blocked because of:
-- `HeadlessChrome` in User-Agent → instant detection
-- `navigator.webdriver = true` → bot fingerprint
-- Missing GPU/font/plugin fingerprints
+## The Solution
 
-**Anemone solves this** by running Chrome in headful mode inside a virtual display, with anti-detection flags and a persistent profile.
+Anemone gives OpenClaw a **managed Chrome that runs anywhere** — Mac, Docker, Ubuntu, VPS — with:
+
+- 🐟 **Anti-detection** — Headful Chrome, clean fingerprint, no "HeadlessChrome" leaks
+- 🖥️ **Remote access** — Web-based VNC (noVNC) so you can see and control the browser from anywhere
+- 🤖 **Agent-native** — CDP integration, OpenClaw controls Chrome directly
+- 🔒 **Secure** — SSL, password auth, Chrome Policy locks down file access and extensions
+- 🔄 **Persistent** — Cookies and login sessions survive restarts
+- 👤 **Human-in-the-loop** — When CAPTCHA hits, open VNC in your browser and solve it. Done.
+
+No more relay disconnects. No more blocked searches. No more blind headless Chrome.
 
 ## Quick Start
 
+### Docker / VPS / Remote Server
+
 ```bash
-# 1. Install (once per container)
-docker cp setup.sh <container>:/tmp/
-docker cp start.sh <container>:/tmp/
-docker exec <container> bash /tmp/setup.sh
+# 1. Install dependencies (once)
+docker exec <container> bash /path/to/setup.sh
 
-# 2. Start
+# 2. Start Anemone
 docker exec <container> bash /root/start.sh
-# Output: https://<IP>:6080/vnc.html?password=<random>&autoconnect=true&resize=scale
+
+# Output:
+# ==========================================
+#   VNC Browser Environment Ready!
+# ==========================================
+#   noVNC:    https://<IP>:6080/vnc.html?password=Ax7kM2pQr9nB3w&autoconnect=true&resize=scale
+#   Password: Ax7kM2pQr9nB3w
+#   CDP:      http://127.0.0.1:9222/json/version
+# ==========================================
 ```
 
-## Access
+### Ubuntu (bare metal)
 
-**Human (web browser):**
-```
-https://<IP>:<PORT>/vnc.html?password=<PASS>&autoconnect=true&resize=scale
+```bash
+# Same scripts work directly on Ubuntu
+bash setup.sh
+bash start.sh
 ```
 
-**AI agent (CDP inside container):**
-```python
-import json, urllib.request
-info = json.loads(urllib.request.urlopen("http://127.0.0.1:9222/json/version").read())
+### macOS
+
+```bash
+# Coming soon — macOS native support
+# For now, use Docker Desktop:
+docker run -it -p 6080:6080 ubuntu:24.04 bash
+# Then run setup.sh + start.sh inside
 ```
+
+## How It Works
+
+```
+ You (any browser, anywhere)           OpenClaw Agent
+      │                                      │
+      │ HTTPS + password                     │ CDP (localhost)
+      ▼                                      ▼
+ ┌──────────────────────────────────────────────────┐
+ │                   Anemone                        │
+ │                                                  │
+ │   noVNC ──► x11vnc ──► Xvfb (virtual display)   │
+ │                              │                   │
+ │                     Chrome (headful, real)        │
+ │                        CDP :9222                  │
+ │                              │                   │
+ │                  ~/.chrome-profile                │
+ │                (persistent cookies)               │
+ └──────────────────────────────────────────────────┘
+```
+
+**Human-in-the-loop flow:**
+1. Agent browses normally via CDP
+2. Hits a CAPTCHA or login wall
+3. Agent sends you the VNC link
+4. You open it in your browser, solve the CAPTCHA
+5. Agent continues automatically
 
 ## Configuration
 
 ```bash
-bash /root/start.sh [password] [novnc_port] [cdp_port] [resolution]
+bash start.sh [password] [novnc_port] [cdp_port] [resolution]
 
-# Examples:
-bash /root/start.sh                              # Random password, defaults
-bash /root/start.sh "mypass123"                   # Custom password
-bash /root/start.sh "mypass123" 6080 9222         # Custom ports
-bash /root/start.sh "" 6080 9222 1920x1080x24     # Custom resolution
+# Random password (default):
+bash start.sh
+
+# Fixed password:
+bash start.sh "my-secure-password"
+
+# Custom ports + resolution:
+bash start.sh "my-password" 6080 9222 1920x1080x24
 ```
 
-## Architecture
+## OpenClaw Integration
 
-```
- You (browser)                        AI Agent
-      │                                   │
-      │ HTTPS/WSS (SSL + password)        │ CDP (localhost only)
-      ▼                                   ▼
- ┌─────────────────────────────────────────────┐
- │  Anemone Container                          │
- │                                             │
- │  websockify:6080 ──► x11vnc:5900            │
- │                          │                  │
- │                     Xvfb :99                │
- │                          │                  │
- │                   Chrome (headful)          │
- │                     CDP :9222               │
- │                          │                  │
- │               /root/.chrome-profile         │
- │              (persistent cookies)           │
- └─────────────────────────────────────────────┘
-```
-
-## Security
-
-| Layer | Protection |
-|-------|-----------|
-| noVNC | SSL + random 14-char password |
-| CDP | localhost only, not exposed |
-| Chrome Policy | `file://` blocked, extensions blocked, DevTools disabled |
-| Container | Docker isolation from host |
-
-Even if an attacker breaks the VNC password, they can only browse the web inside the container — no file access, no host access.
-
-## Tested Environments
-
-| Server | IP Type | Google Search | Google Scholar |
-|--------|---------|:------------:|:--------------:|
-| Home server (Taiwan) | Residential | ✅ | ✅ |
-| OVH (France) | Datacenter | ✅ | ✅ |
-
-## Companion to OpenClaw
-
-Anemone is designed to work with [OpenClaw](https://github.com/openclaw/openclaw) AI agents. Add to your OpenClaw config:
+Add to your OpenClaw config (`~/.openclaw/openclaw.json`):
 
 ```json
 {
@@ -127,14 +127,43 @@ Anemone is designed to work with [OpenClaw](https://github.com/openclaw/openclaw
 }
 ```
 
+Then use `browser` tool normally. No relay needed.
+
+## Security
+
+| Layer | Protection |
+|-------|-----------|
+| Network | SSL/TLS encryption (self-signed cert) |
+| Auth | Random 14-char password (or custom) |
+| CDP | Localhost only — not exposed to network |
+| Chrome Policy | `file://` blocked, extensions blocked, DevTools disabled, `data:text/html` blocked |
+| Isolation | Docker container separation from host |
+
+## Tested
+
+| Environment | IP Type | Google | Scholar | Cloudflare |
+|-------------|---------|:------:|:-------:|:----------:|
+| Docker (home server, Taiwan) | Residential | ✅ | ✅ | ✅ |
+| Docker (OVH, France) | Datacenter | ✅ | ✅ | ✅ |
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `setup.sh` | One-time dependency install |
-| `start.sh` | Start environment (idempotent) |
-| `test.py` | Test Google/Scholar access |
+| `setup.sh` | One-time: installs Chrome, Xvfb, VNC, noVNC |
+| `start.sh` | Starts Anemone (safe to re-run) |
+| `test.py` | Verifies Google/Scholar access works |
+
+## Why "Anemone"?
+
+Sea anemones and crabs are natural symbionts — the anemone protects the crab, the crab carries the anemone. Just like Anemone protects OpenClaw's browser from detection. And yes, it sounds a bit like "anonymous" 🌊
 
 ## License
 
 MIT
+
+---
+
+<p align="center">
+  Part of the <a href="https://github.com/openclaw/openclaw">OpenClaw</a> ecosystem 🦀
+</p>

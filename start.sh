@@ -1,6 +1,6 @@
 #!/bin/bash
 # === Start headful Chrome + VNC + noVNC environment ===
-# Usage: bash start_vnc_browser.sh [password] [novnc_port] [cdp_port]
+# Usage: bash start.sh [password] [novnc_port] [cdp_port]
 
 # Generate random 14-char password if not specified
 generate_password() {
