@@ -111,6 +111,35 @@ Each session gets its own **window** (not just tab). Same profile = shared cooki
 - Never call `browser action=tabs` and pick someone else's tab
 - If your tab crashes, open a new one (don't reuse others)
 
+### Opening new windows via CDP (for advanced use):
+
+If you need to explicitly open a **new window** (not just a tab), use CDP:
+
+```python
+# Via CDP websocket (Target.createTarget with newWindow: true)
+import json, asyncio, websockets, urllib.request
+
+async def open_new_window(cdp_port, url):
+    version = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{cdp_port}/json/version").read())
+    ws_url = version["webSocketDebuggerUrl"]
+    async with websockets.connect(ws_url) as ws:
+        await ws.send(json.dumps({
+            "id": 1,
+            "method": "Target.createTarget",
+            "params": {"url": url, "newWindow": True}
+        }))
+        resp = json.loads(await ws.recv())
+        target_id = resp["result"]["targetId"]
+        print(f"New window: {url} -> targetId={target_id}")
+        return target_id
+```
+
+Or via OpenClaw's browser tool (opens as a new tab in the same window):
+```
+browser action=open targetUrl="https://example.com" profile=openclaw
+# Returns targetId — use this for all subsequent calls
+```
+
 ### Architecture:
 ```
 Chrome (one instance, one profile, shared cookies)
@@ -119,7 +148,11 @@ Chrome (one instance, one profile, shared cookies)
 └── Window/Tab targetId=CCC → Session C controls this
 ```
 
+All sessions share cookies and login state. Each session only operates on its own targetId.
 This works identically on Mac, Linux, and Docker (with or without Xvfb).
+
+### Important: Do NOT use kiosk mode
+Chrome's `--kiosk` flag hides the tab bar and address bar, making multi-window unusable via VNC. The `start.sh` script uses `--start-maximized` instead, so all windows and tabs are visible when a human connects via noVNC.
 
 ### OpenClaw Config (what setup scripts configure)
 
