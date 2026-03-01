@@ -57,7 +57,7 @@ google-chrome-stable \
   --remote-debugging-address=0.0.0.0 \
   --display=:$DISPLAY_NUM \
   --window-size=$(echo $RESOLUTION | cut -dx -f1),$(echo $RESOLUTION | cut -dx -f2) \
-  --start-maximized \
+  --start-maximized --kiosk \
   &>/dev/null &
 sleep 3
 
