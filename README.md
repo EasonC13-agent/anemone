@@ -65,11 +65,15 @@ bash start.sh
 ### macOS
 
 ```bash
-# Coming soon — macOS native support
-# For now, use Docker Desktop:
-docker run -it -p 6080:6080 ubuntu:24.04 bash
-# Then run setup.sh + start.sh inside
+# One command — configures OpenClaw to use managed Chrome
+bash setup-mac.sh
+
+# Then use it:
+openclaw browser start
+openclaw browser open https://www.google.com
 ```
+
+No VNC needed on Mac (you have a display). The agent's `browser` tool works automatically after setup.
 
 ## How It Works
 
