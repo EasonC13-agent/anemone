@@ -7,7 +7,7 @@ echo "=== Installing dependencies ==="
 apt-get update -qq
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
   wget curl gnupg2 \
-  xvfb x11vnc novnc websockify fluxbox \
+  xvfb x11vnc novnc websockify fluxbox cron procps \
   openssl \
   2>&1 | tail -5
 

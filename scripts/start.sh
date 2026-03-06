@@ -102,6 +102,21 @@ if [ $FAIL -eq 0 ]; then
   echo "  Password: ${VNC_PASS}"
   echo "  CDP:      http://127.0.0.1:${CDP_PORT}/json/version"
   echo "=========================================="
+
+  # === Install healthcheck cron (auto-recovery) ===
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  HC_SRC="$SCRIPT_DIR/healthcheck.sh"
+  HC_DST="/root/healthcheck.sh"
+  if [ -f "$HC_SRC" ]; then
+    cp "$HC_SRC" "$HC_DST"
+    chmod +x "$HC_DST"
+  fi
+  if [ -f "$HC_DST" ]; then
+    CRON_CMD="*/2 * * * * bash $HC_DST $DISPLAY_NUM $VNC_PORT $NOVNC_PORT $CDP_PORT >> /tmp/anemone-healthcheck.log 2>&1"
+    # Add cron only if not already present
+    (crontab -l 2>/dev/null | grep -v "healthcheck.sh"; echo "$CRON_CMD") | crontab -
+    echo "  Healthcheck: cron installed (every 2 min)"
+  fi
 else
   echo "Some services failed to start. Check logs above."
   exit 1

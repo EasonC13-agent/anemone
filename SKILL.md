@@ -176,3 +176,101 @@ https://57.129.90.145:10150/vnc.html?password=e0GGP4xeMUL5ga&autoconnect=true&re
 ## Important: No Kiosk Mode
 
 Do NOT use Chrome's `--kiosk` flag. It hides the tab bar and address bar, making multi-window unusable via VNC. Use `--start-maximized` instead.
+
+## Troubleshooting
+
+### Chrome window not visible in VNC
+
+**Symptoms:** VNC connects but shows only Ubuntu splash screen, no Chrome window.
+
+**Common causes and fixes:**
+
+1. **Fluxbox crashed (becomes defunct):**
+   - Check: `ps aux | grep fluxbox | grep defunct`
+   - Fix: Restart fluxbox
+     ```bash
+     export DISPLAY=:99
+     fluxbox &
+     ```
+
+2. **Stale X display lock files:**
+   - Check: `ls -la /tmp/.X*lock`
+   - Fix: Use a different display number, or remove lock if no Xvfb running
+     ```bash
+     rm -f /tmp/.X99-lock
+     ```
+
+3. **Chrome window minimized or hidden:**
+   - Check: `xwininfo -root -tree` to find Chrome window ID
+   - Fix: Use python-xlib to raise and resize:
+     ```python
+     from Xlib.display import Display
+     d = Display(':99')
+     window = d.create_resource_object('window', 0x800001)  # Chrome's window ID
+     window.configure(x=0, y=0, width=1920, height=1040)
+     window.configure(stack_mode='Above')
+     d.sync()
+     ```
+
+4. **X11vnc not capturing properly:**
+   - Restart x11vnc after fluxbox:
+     ```bash
+     pkill x11vnc
+     x11vnc -display :99 -forever -shared -rfbauth ~/.vnc/passwd -rfbport 5900 -bg
+     ```
+
+### Complete restart procedure
+
+If all else fails, kill and restart everything:
+
+```bash
+# Kill all
+pkill -9 -u $USER chrome
+pkill -9 -u $USER x11vnc
+pkill -9 -u $USER Xvfb
+pkill -9 -u $USER fluxbox
+pkill -9 -u $USER websockify
+sleep 2
+
+# Start fresh (use new display number to avoid stale locks)
+rm -f /tmp/.X30-lock
+Xvfb :30 -screen 0 1920x1080x24 &
+sleep 2
+export DISPLAY=:30
+fluxbox &
+sleep 2
+google-chrome-stable --no-sandbox --disable-gpu ... &
+sleep 4
+x11vnc -display :30 -forever -shared -rfbauth ~/.vnc/passwd -rfbport 5900 -bg
+sleep 1
+websockify --web=/usr/share/novnc --cert=~/.vnc/combined.pem 15005 localhost:5900 -D
+```
+
+### Auto-Recovery (healthcheck.sh)
+
+`start.sh` automatically installs a cron job that runs `healthcheck.sh` every 2 minutes.
+It monitors all 5 components and auto-restarts any that crash or become defunct:
+
+- **Xvfb** — cleans stale lock files, restarts display
+- **fluxbox** — detects defunct (zombie) state, kills and restarts
+- **x11vnc** — restarts VNC server
+- **websockify** — restarts noVNC proxy
+- **Chrome** — restarts with same CDP port and anti-detection flags
+
+Logs: `/tmp/anemone-healthcheck.log`
+
+Manual run:
+```bash
+bash /root/healthcheck.sh [display_num] [vnc_port] [novnc_port] [cdp_port]
+# defaults: 99 5900 6080 9222
+```
+
+To check status:
+```bash
+tail -20 /tmp/anemone-healthcheck.log
+```
+
+To disable:
+```bash
+crontab -l | grep -v healthcheck | crontab -
+```
