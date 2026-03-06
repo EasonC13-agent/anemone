@@ -35,45 +35,43 @@ No more relay disconnects. No more blocked searches. No more blind headless Chro
 
 ## Quick Start
 
-### Docker / VPS / Remote Server
+### Install via npm
+
+```bash
+npm install -g anemone-browser
+```
+
+### Linux / Docker / VPS
 
 ```bash
 # 1. Install dependencies (once)
-docker exec <container> bash /path/to/setup.sh
+anemone setup
 
-# 2. Start Anemone
-docker exec <container> bash /root/start.sh
+# 2. Start everything (Chrome + VNC + auto-recovery)
+anemone start --password mypass --port 6080
 
-# Output:
-# ==========================================
-#   VNC Browser Environment Ready!
-# ==========================================
-#   noVNC:    https://<IP>:6080/vnc.html?password=Ax7kM2pQr9nB3w&autoconnect=true&resize=scale
-#   Password: Ax7kM2pQr9nB3w
-#   CDP:      http://127.0.0.1:9222/json/version
-# ==========================================
-```
+# 3. Check status
+anemone status
 
-### Ubuntu (bare metal)
-
-```bash
-# Same scripts work directly on Ubuntu
-bash setup.sh
-bash start.sh
+# 4. Get noVNC URL to share
+anemone url
 ```
 
 ### macOS
 
 ```bash
-# One command — configures OpenClaw to use managed Chrome
-bash setup-mac.sh
-
-# Then use it:
-openclaw browser start
-openclaw browser open https://www.google.com
+anemone setup    # Configures OpenClaw to use managed Chrome
+# Then use: openclaw browser start
 ```
 
-No VNC needed on Mac (you have a display). The agent's `browser` tool works automatically after setup.
+No VNC needed on Mac (you have a display).
+
+### Without npm (bash scripts)
+
+```bash
+bash scripts/setup.sh
+bash scripts/start.sh [password] [novnc_port] [cdp_port] [resolution]
+```
 
 ## How It Works
 
@@ -150,13 +148,34 @@ Then use `browser` tool normally. No relay needed.
 | Docker (home server, Taiwan) | Residential | ✅ | ✅ | ✅ |
 | Docker (OVH, France) | Datacenter | ✅ | ✅ | ✅ |
 
+## CLI Reference
+
+```
+anemone setup              # Install deps (Chrome, Xvfb, VNC)
+anemone start [options]    # Start Chrome + VNC + healthcheck cron
+anemone stop               # Stop all services
+anemone restart [options]  # Stop + start
+anemone status             # Check all components
+anemone healthcheck        # Run auto-recovery manually
+anemone url                # Print noVNC URL
+
+Options:
+  --password <pass>        VNC password (random if omitted)
+  --port <port>            noVNC port (default: 6080)
+  --cdp-port <port>        CDP port (default: 9222)
+  --resolution <WxHxD>     Display (default: 1920x1080x24)
+```
+
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `setup.sh` | One-time: installs Chrome, Xvfb, VNC, noVNC |
-| `start.sh` | Starts Anemone (safe to re-run) |
-| `test.py` | Verifies Google/Scholar access works |
+| `bin/anemone.mjs` | CLI entry point |
+| `scripts/setup.sh` | Linux dependency installer |
+| `scripts/setup-mac.sh` | macOS setup |
+| `scripts/start.sh` | Start all services |
+| `scripts/healthcheck.sh` | Auto-recovery monitor |
+| `scripts/test.py` | Google/Scholar access test |
 
 ## Why "Anemone"?
 
